@@ -1,0 +1,17 @@
+# 文献语义搜索系统 - 依赖列表
+# 安装: pip install -r requirements.txt
+
+# PDF 读取
+PyMuPDF>=1.23.0
+
+# 中文分词
+jieba>=0.42.1
+
+# 语义向量模型（支持中英文跨语言）
+sentence-transformers>=2.2.0
+
+# 数值计算
+numpy>=1.24.0
+
+# 美化终端输出（demo_search.py 使用）
+rich>=13.0.0

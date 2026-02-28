@@ -1,0 +1,19 @@
+# 生成的索引文件（体积大，含个人文献路径，不上传）
+paper_index.json
+paper_embeddings.npz
+paper_index_readable.md
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 个人笔记和开题报告（私有内容）
+*.docx
+*.pptx
+文献精读笔记.md
+开题报告溯源.md
+小红书文案_*.md
+
+# 大型文献文件
+*.pdf
