@@ -93,27 +93,19 @@ _QUERY_TEMPLATES = {
 }
 
 # 词级翻译（用于英文关键词搜索通道，让中文查询能匹配英文文献）
-# 保留通用翻译，并在下方添加你领域的专用词对
+# ⚠️ 此字典必须根据你的研究领域定制，否则中文查询无法命中英文文献！
 CN_TO_EN_QUERY = {
-    # ======= 通用学术词汇（各学科通用，建议保留）=======
-    "温度": "temperature",
-    "降水": "precipitation rainfall",
-    "气候": "climate",
-    "气候变化": "climate change warming",
-    "归因": "attribution",
+    # ======= 通用学术动词/方法（各学科均适用，建议保留）=======
     "分类": "classification",
-    "制图": "mapping",
-    "识别": "identification detection",
-    "影响": "effect impact",
-    "机制": "mechanism",
-    "趋势": "trend",
-    "响应": "response",
+    "识别": "identification detection recognition",
+    "影响": "effect impact influence",
+    "机制": "mechanism pathway",
+    "趋势": "trend change",
+    "响应": "response effect",
     "模拟": "simulation modeling",
     "预测": "prediction forecast",
     "评估": "assessment evaluation",
-    "时空": "spatiotemporal spatial temporal",
-    "全球": "global",
-    "区域": "regional",
+    "归因": "attribution",
 
     # ======= ⚠️ 请在此填入你领域的专用词对（非常重要！）=======
     # 语义搜索（embedding）无需此字典即可工作；
@@ -136,22 +128,13 @@ CN_TO_EN_QUERY = {
 }
 
 # ============= 英→中标签映射（给英文论文生成中文关键词） =============
-# 保留通用标签，在下方添加你领域的专用词对
+# ⚠️ 此字典必须根据你的研究领域定制！填写越多，中文检索英文论文的覆盖率越高。
 _EN_TO_CN_TAGS = {
-    # ======= 通用气候/环境背景标签（各领域论文背景中常出现）=======
-    "climate change": "气候变化", "global warming": "全球变暖",
-    "climate variability": "气候变率",
-    "temperature": "温度", "air temperature": "气温",
-    "precipitation": "降水", "rainfall": "降水",
-    "humidity": "湿度", "relative humidity": "湿度",
-    "solar radiation": "太阳辐射", "radiation": "辐射",
-    "wind speed": "风速",
-    "warming": "变暖", "frost": "霜冻", "co2": "CO2",
-    # ======= 通用学术方法标签 =======
-    "attribution": "归因分析", "trend": "趋势", "model": "模型",
-    "classification": "分类", "mapping": "制图",
-    "land use": "土地利用", "land cover": "土地覆盖",
-    "elevation": "海拔", "latitude": "纬度",
+    # ======= 通用学术方法标签（各学科均适用，建议保留）=======
+    "attribution": "归因分析",
+    "trend": "趋势",
+    "model": "模型",
+    "classification": "分类",
 
     # ======= ⚠️ 请在此添加你领域的专用英→中标签（非常重要！）=======
     # 这些标签用于为英文论文自动生成中文关键词，让英文文献可以被中文词汇检索到。
