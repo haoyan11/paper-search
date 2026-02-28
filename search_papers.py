@@ -95,18 +95,11 @@ _QUERY_TEMPLATES = {
 # 词级翻译（用于英文关键词搜索通道，让中文查询能匹配英文文献）
 # 保留通用翻译，并在下方添加你领域的专用词对
 CN_TO_EN_QUERY = {
-    # ======= 通用学术词汇（各领域通用，建议保留）=======
+    # ======= 通用学术词汇（各学科通用，建议保留）=======
     "温度": "temperature",
     "降水": "precipitation rainfall",
     "气候": "climate",
     "气候变化": "climate change warming",
-    "干旱": "drought",
-    "遥感": "remote sensing satellite",
-    "森林": "forest",
-    "植被": "vegetation",
-    "土壤": "soil",
-    "土壤水分": "soil moisture",
-    "碳": "carbon",
     "归因": "attribution",
     "分类": "classification",
     "制图": "mapping",
@@ -121,14 +114,31 @@ CN_TO_EN_QUERY = {
     "时空": "spatiotemporal spatial temporal",
     "全球": "global",
     "区域": "regional",
-    # ======= 在此添加你领域的专用词对 =======
-    # "你的专业词": "your professional term",
+
+    # ======= ⚠️ 请在此填入你领域的专用词对（非常重要！）=======
+    # 语义搜索（embedding）无需此字典即可工作；
+    # 但 BM25 关键词通道依赖该词典将中文词翻译为英文关键词，
+    # 缺失时中文查询将无法命中仅有英文标题/摘要的论文。
+    # 词对越齐全，"中文查询 → 英文文献"的召回效果越好。
+    # ⚡ 推荐：让 Claude / ChatGPT 帮你30秒生成30~50个词对（见 README）
+    #
+    # 示例（医学，可删除并替换为你的领域）：
+    # "心肌梗死": "myocardial infarction heart attack",
+    # "靶向治疗": "targeted therapy inhibitor kinase",
+    # "免疫治疗": "immunotherapy checkpoint PD-1 PD-L1",
+    # "临床试验": "clinical trial randomized controlled",
+    # "生物标志物": "biomarker marker",
+    #
+    # 示例（计算机，可删除并替换为你的领域）：
+    # "大语言模型": "large language model LLM GPT transformer",
+    # "图像识别": "image recognition classification CNN",
+    # "强化学习": "reinforcement learning reward policy",
 }
 
 # ============= 英→中标签映射（给英文论文生成中文关键词） =============
 # 保留通用标签，在下方添加你领域的专用词对
 _EN_TO_CN_TAGS = {
-    # 气候
+    # ======= 通用气候/环境背景标签（各领域论文背景中常出现）=======
     "climate change": "气候变化", "global warming": "全球变暖",
     "climate variability": "气候变率",
     "temperature": "温度", "air temperature": "气温",
@@ -137,22 +147,32 @@ _EN_TO_CN_TAGS = {
     "solar radiation": "太阳辐射", "radiation": "辐射",
     "wind speed": "风速",
     "warming": "变暖", "frost": "霜冻", "co2": "CO2",
-    "drought": "干旱", "semi-arid": "半干旱", "arid": "干旱",
-    # 生物/自然（通用）
-    "vegetation": "植被", "forest": "森林", "grassland": "草地",
-    # 卫星/传感器（通用）
-    "ndvi": "NDVI", "modis": "MODIS", "remote sensing": "遥感",
-    # 碳/生产力
-    "carbon": "碳", "gpp": "GPP", "npp": "NPP",
-    "photosynthesis": "光合作用", "productivity": "生产力",
-    # 通用学术
-    "soil moisture": "土壤水分", "soil": "土壤",
+    # ======= 通用学术方法标签 =======
     "attribution": "归因分析", "trend": "趋势", "model": "模型",
-    "land use": "土地利用", "land cover": "土地覆盖",
     "classification": "分类", "mapping": "制图",
+    "land use": "土地利用", "land cover": "土地覆盖",
     "elevation": "海拔", "latitude": "纬度",
-    # ======= 在此添加你领域的专用英→中标签 =======
-    # "your English term": "对应中文",
+
+    # ======= ⚠️ 请在此添加你领域的专用英→中标签（非常重要！）=======
+    # 这些标签用于为英文论文自动生成中文关键词，让英文文献可以被中文词汇检索到。
+    # 填写越齐全，中文关键词搜索英文论文的覆盖率越高。
+    # ⚡ 推荐：让 Claude / ChatGPT 帮你生成（见 README）
+    #
+    # 示例（医学，可删除并替换为你的领域）：
+    # "myocardial infarction": "心肌梗死",
+    # "targeted therapy": "靶向治疗",
+    # "immunotherapy": "免疫治疗",
+    # "clinical trial": "临床试验",
+    # "biomarker": "生物标志物",
+    # "drug resistance": "耐药性",
+    # "tumor microenvironment": "肿瘤微环境",
+    #
+    # 示例（计算机，可删除并替换为你的领域）：
+    # "large language model": "大语言模型",
+    # "image segmentation": "图像分割",
+    # "reinforcement learning": "强化学习",
+    # "knowledge graph": "知识图谱",
+    # "object detection": "目标检测",
 }
 _COMPOUND_TAG_RULES = [
     # ⚡ 让 AI 帮你生成（见 README "使用AI助手定制"章节）
