@@ -35,11 +35,15 @@ except ImportError:
 
 # ============= jieba 领域词典（与build_paper_index.py保持一致） =============
 # 请填入你研究领域的专业词汇，让分词器正确识别这些术语（不会被拆散）
-# 示例格式：
-#   生态学：["物候", "蒸散发", "生长季", "径流"]
-#   医  学：["心肌梗死", "动脉粥样硬化", "冠心病", "胰岛素抵抗"]
-#   材料学：["石墨烯", "纳米管", "超导体", "钙钛矿"]
-#   计算机：["神经网络", "注意力机制", "大语言模型", "迁移学习"]
+#
+# ⚡ 推荐：让 Claude / ChatGPT 帮你一键生成（见 README "使用AI助手定制"章节）
+#    提示词示例："我是[你的研究方向]方向研究生，帮我生成jieba领域词典的词汇列表"
+#
+# 手动填写示例：
+#   医  学：["心肌梗死", "动脉粥样硬化", "高血压", "胰岛素抵抗", "靶向治疗"]
+#   计算机：["神经网络", "注意力机制", "大语言模型", "迁移学习", "强化学习"]
+#   材料学：["石墨烯", "纳米管", "超导体", "钙钛矿", "金属有机框架"]
+#   经济学：["货币政策", "供应链管理", "价格指数", "市场失灵", "宏观经济"]
 DOMAIN_WORDS = [
     # 在这里填入你领域的专业词汇
     # "专业词汇1", "专业词汇2", "专业词汇3",
@@ -63,28 +67,29 @@ STOPWORDS_ZH = {
 }
 
 # 主题→同义词扩展映射
-# 请根据你的研究领域替换/新增条目
+# ⚡ 推荐：让 Claude / ChatGPT 帮你生成（见 README "使用AI助手定制"章节）
 # 格式："中文核心概念": ["English synonym1", "synonym2", "中文同义词", ...]
 TOPIC_EXPANSIONS = {
-    # 以下为示例条目，可直接替换为你的领域
-    "气候变化": ["climate change", "global warming", "warming", "temperature",
-                "precipitation", "降水", "气温", "变暖", "extreme climate"],
-    "机器学习": ["machine learning", "deep learning", "neural network", "ML", "AI",
-                "random forest", "XGBoost", "LSTM", "transformer", "CNN", "SHAP"],
-    "遥感": ["remote sensing", "satellite", "NDVI", "EVI", "MODIS", "Landsat",
-            "Google Earth Engine", "GEE", "sentinel", "卫星", "遥感反演"],
+    # 以下为示例条目（可替换为你的领域）
+    "医学影像": ["medical imaging", "MRI", "CT scan", "X-ray", "ultrasound",
+                "radiology", "image segmentation", "computer-aided diagnosis", "诊断"],
+    "大语言模型": ["large language model", "LLM", "GPT", "BERT", "transformer",
+                  "ChatGPT", "fine-tuning", "prompt engineering", "自然语言处理", "NLP"],
+    "药物发现": ["drug discovery", "drug design", "molecular docking", "target",
+               "靶点", "抗体", "小分子", "临床试验", "pharmacology"],
     # 在此继续添加你的核心研究概念...
     # "你的主题": ["English synonym1", "synonym2", "中文同义词"],
 }
 
 # ============= 中文→英文查询翻译（语义搜索用） =============
 # 完整查询模板（优先匹配，最精准）
-# 添加你领域最常用的中文查询短语及其英文关键词扩展
+# ⚡ 推荐：让 AI 帮你生成你领域最常用的查询→英文扩展对
+# 格式："中文查询短语": "English keyword expansion"
 _QUERY_TEMPLATES = {
-    # "中文查询短语": "English keyword expansion",
-    # 示例：
-    # "气候变化对植被的影响": "climate change vegetation response effect",
-    # "机器学习图像分类": "machine learning image classification CNN deep learning",
+    # 示例（医学/计算机，请替换为你自己的）：
+    # "靶向治疗耐药性机制": "targeted therapy drug resistance mechanism cancer",
+    # "大模型推理能力评估": "large language model reasoning benchmark evaluation",
+    # "医学图像分割深度学习": "medical image segmentation deep learning CNN",
 }
 
 # 词级翻译（用于英文关键词搜索通道，让中文查询能匹配英文文献）
@@ -133,13 +138,10 @@ _EN_TO_CN_TAGS = {
     "wind speed": "风速",
     "warming": "变暖", "frost": "霜冻", "co2": "CO2",
     "drought": "干旱", "semi-arid": "半干旱", "arid": "干旱",
-    # 植被/生态
+    # 生物/自然（通用）
     "vegetation": "植被", "forest": "森林", "grassland": "草地",
-    "cropland": "农田", "shrub": "灌丛", "ecosystem": "生态系统",
-    "canopy": "冠层", "leaf area index": "叶面积指数", "lai": "叶面积指数",
-    # 遥感
-    "ndvi": "NDVI", "evi": "EVI", "sif": "SIF",
-    "modis": "MODIS", "landsat": "Landsat", "remote sensing": "遥感",
+    # 卫星/传感器（通用）
+    "ndvi": "NDVI", "modis": "MODIS", "remote sensing": "遥感",
     # 碳/生产力
     "carbon": "碳", "gpp": "GPP", "npp": "NPP",
     "photosynthesis": "光合作用", "productivity": "生产力",
@@ -153,11 +155,11 @@ _EN_TO_CN_TAGS = {
     # "your English term": "对应中文",
 }
 _COMPOUND_TAG_RULES = [
-    # 请根据你的研究领域添加复合主题规则
+    # ⚡ 让 AI 帮你生成（见 README "使用AI助手定制"章节）
     # 格式：({"主题标签A", "主题标签B"}, "复合主题标签")
-    # 示例：
-    # ({"气候变化", "植被"}, "气候变化植被响应"),
-    # ({"机器学习", "遥感"}, "遥感机器学习"),
+    # 示例（医学/计算机，请替换）：
+    # ({"深度学习", "医学影像"}, "医学影像深度学习"),
+    # ({"大语言模型", "推理"}, "大模型推理能力"),
 ]
 
 def _generate_cn_topics(paper):

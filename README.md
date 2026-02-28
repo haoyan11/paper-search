@@ -163,7 +163,7 @@ PDF 文件
 ## 适用场景
 
 - 有 100~2000 篇本地 PDF 文献的研究生（**任意学科**）
-- 需要用中文思路检索英文文献（生态、医学、材料、经济、法学…… 非 CS 方向）
+- 需要用中文思路检索英文文献（医学、材料、经济、法学、心理学…… 任意学科）
 - 希望数据完全本地，不想上传论文到第三方服务
 - 用 Zotero 管理文献，想增强搜索能力
 
@@ -182,26 +182,57 @@ PDF 文件
 | `search_papers.py` | `CN_TO_EN_QUERY` | 中文关键词→英文翻译 | **建议补充** |
 | `build_paper_index.py` | `DOMAIN_WORDS` | 同上（建索引时用） | **建议替换** |
 
-**定制步骤**（5~10分钟）：
+> 修改后**只需重新运行 `build_paper_index.py`**，embedding 向量无需重建。
 
-```python
-# 1. 在 DOMAIN_WORDS 中填入你领域的专业词汇
-DOMAIN_WORDS = [
-    "你的专业词1", "你的专业词2", ...  # 让分词器不拆散这些词
-]
+---
 
-# 2. 在 TOPIC_EXPANSIONS 中添加你的核心概念
-TOPIC_EXPANSIONS = {
-    "你的核心概念": ["English synonym1", "synonym2", "中文近义词"],
-}
+## 使用 AI 助手定制关键词（推荐，5 分钟完成）
 
-# 3. 在 CN_TO_EN_QUERY 中补充专业词的中英翻译
-CN_TO_EN_QUERY = {
-    "你的专业词": "your professional term in English",
-}
+不知道填什么关键词？直接把下面的提示词发给 **Claude / ChatGPT**，把生成结果粘贴到对应变量里即可。
+
+**提示词模板：**
+
+```
+我是[你的研究方向]方向的研究生，研究课题是[你的课题]。
+请帮我生成以下三个 Python 字典的内容，用于文献语义搜索系统：
+
+1. DOMAIN_WORDS（列表）：我领域的专业词汇，让中文分词器不拆散这些词
+   要求：20~40 个词，中文
+
+2. TOPIC_EXPANSIONS（字典）：核心研究概念 → 同义词扩展
+   格式：{"中文概念": ["English synonym1", "synonym2", "中文近义词"]}
+   要求：5~8 个概念，每个给 5~8 个同义词
+
+3. CN_TO_EN_QUERY（字典）：中文专业词 → 英文翻译，用于跨语言检索
+   格式：{"中文词": "English term synonym2"}
+   要求：30~50 个常用词对
+
+请直接输出可粘贴的 Python 代码格式。
 ```
 
-> 修改后重新运行 `build_paper_index.py` 即可（embedding 向量无需重建）。
+生成后分别替换 `search_papers.py` 和 `build_paper_index.py` 中对应的变量即可。
+
+**示例（医学方向，由 AI 生成）：**
+
+```python
+DOMAIN_WORDS = [
+    "心肌梗死", "冠状动脉", "动脉粥样硬化", "靶向治疗", "免疫检查点",
+    "CRISPR", "基因编辑", "单细胞测序", "蛋白质组学", "生物标志物",
+]
+
+TOPIC_EXPANSIONS = {
+    "靶向治疗": ["targeted therapy", "targeted treatment", "molecular targeted",
+               "靶点", "抑制剂", "inhibitor", "kinase", "receptor"],
+    "免疫治疗": ["immunotherapy", "checkpoint inhibitor", "PD-1", "PD-L1",
+               "CAR-T", "免疫检查点", "肿瘤免疫", "anti-tumor immunity"],
+}
+
+CN_TO_EN_QUERY = {
+    "靶向治疗": "targeted therapy inhibitor",
+    "耐药性": "drug resistance",
+    "肿瘤微环境": "tumor microenvironment TME",
+}
+```
 
 ---
 
