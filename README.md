@@ -105,6 +105,13 @@ python3 demo_search.py "your research topic in English"
 python3 search_papers.py "关键词" --top 10
 ```
 
+### 5. 【可选但推荐】定制关键词（5分钟，效果提升明显）
+
+> 语义搜索开箱即用，跳过本步也能用。
+> 但如果你的文献以英文为主，**强烈建议配置关键词字典**，让中文查询能更准确地命中英文文献。
+
+→ 见下方「[使用 AI 助手定制关键词](#使用-ai-助手定制关键词推荐5-分钟完成)」章节，复制提示词发给 Claude / ChatGPT，5分钟完成配置。
+
 ---
 
 ## 文件说明
@@ -209,7 +216,7 @@ PDF 文件
 
 ```
 我是[你的研究方向]方向的研究生，研究课题是[你的课题]。
-请帮我生成以下三个 Python 字典的内容，用于文献语义搜索系统：
+请帮我生成以下四个 Python 变量的内容，用于文献语义搜索系统：
 
 1. DOMAIN_WORDS（列表）：我领域的专业词汇，让中文分词器不拆散这些词
    要求：20~40 个词，中文
@@ -218,14 +225,21 @@ PDF 文件
    格式：{"中文概念": ["English synonym1", "synonym2", "中文近义词"]}
    要求：5~8 个概念，每个给 5~8 个同义词
 
-3. CN_TO_EN_QUERY（字典）：中文专业词 → 英文翻译，用于跨语言检索
+3. CN_TO_EN_QUERY（字典）：中文专业词 → 英文翻译，用于中文查询命中英文文献
    格式：{"中文词": "English term synonym2"}
    要求：30~50 个常用词对
+
+4. _EN_TO_CN_TAGS（字典）：英文专业词 → 中文标签，用于给英文论文打中文标签
+   格式：{"English term": "中文标签"}
+   要求：30~50 个常用词对（和第3项互为镜像）
 
 请直接输出可粘贴的 Python 代码格式。
 ```
 
-生成后分别替换 `search_papers.py` 和 `build_paper_index.py` 中对应的变量即可。
+生成后的操作：
+- `DOMAIN_WORDS`：分别替换 `search_papers.py` 和 `build_paper_index.py` 中的同名列表
+- `TOPIC_EXPANSIONS` / `CN_TO_EN_QUERY` / `_EN_TO_CN_TAGS`：替换 `search_papers.py` 中的同名字典（找到变量名，整体替换）
+- 替换完成后重新运行 `python3 build_paper_index.py`（约6分钟），embedding 无需重建
 
 **示例（医学方向，由 AI 生成）：**
 
