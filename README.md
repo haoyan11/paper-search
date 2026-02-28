@@ -62,6 +62,9 @@ $ python3 demo_search.py "你的研究主题关键词"
 
 ## 快速开始
 
+> **💡 第一次用命令行，不知道从哪里开始？**
+> 把这份 README 发给 **Claude / ChatGPT**，告诉 AI 你的操作系统（Windows / Mac / Linux），让它带你一步步完成安装。遇到报错也直接截图发给 AI，它会告诉你怎么解决。
+
 ### 1. 安装依赖
 
 ```bash
@@ -72,12 +75,17 @@ pip install -r requirements.txt
 
 ### 2. 修改配置
 
-编辑 `config.py`，填写你的文献目录：
+用任意文本编辑器打开 `config.py`（记事本 / VS Code / TextEdit 都行），填写你的文献目录：
 
 ```python
-PDF_DIR = Path("~/你的文献目录/")   # PDF 存放位置
-ZOTERO_DIR = Path("~/Zotero")       # Zotero 目录（可选）
+PDF_DIR = Path("~/你的文献目录/")   # PDF 存放位置（填你实际的路径）
+ZOTERO_DIR = Path("~/Zotero")       # Zotero 目录（没用 Zotero 就删掉这行或留空）
 ```
+
+> **Zotero 默认路径参考（不确定在哪就去这里找）：**
+> - Windows：`C:\Users\你的用户名\Zotero`
+> - Mac：`/Users/你的用户名/Zotero`
+> - Linux：`/home/你的用户名/Zotero`
 
 ### 3. 建索引（只需运行一次）
 
@@ -92,18 +100,17 @@ python3 build_embeddings.py
 ### 4. 搜索
 
 ```bash
-# 中文查询（推荐）
-python3 demo_search.py "你的研究主题关键词"
+# 中文查询（推荐）—— 引号里填你想找的主题，可以是词组或一句话
+python3 demo_search.py "靶向治疗耐药性分子机制"
 
 # 中英双语查询（更精准）
-python3 demo_search.py "中文查询" --also "English query"
-
-# 纯英文
-python3 demo_search.py "your research topic in English"
+python3 demo_search.py "大语言模型推理能力" --also "LLM reasoning evaluation"
 
 # 返回更多结果（默认5篇）
-python3 search_papers.py "关键词" --top 10
+python3 search_papers.py "机器学习金融预测" --top 10
 ```
+
+> **搜什么？** 可以是关键词，也可以是一句描述你想法的短语。不需要精确匹配论文标题——语义搜索理解"意思"，不是逐字匹配。
 
 ### 5. 【可选但推荐】定制关键词（5分钟，效果提升明显）
 
@@ -173,6 +180,72 @@ PDF 文件
 - 需要用中文思路检索英文文献（医学、材料、经济、法学、心理学…… 任意学科）
 - 希望数据完全本地，不想上传论文到第三方服务
 - 用 Zotero 管理文献，想增强搜索能力
+- **文献散落未整理也能用**：不需要预先分好类、建好目录结构，只要告诉脚本你的 PDF 放在哪，建完索引就能按主题直接搜
+
+---
+
+## 三种典型使用场景
+
+### 场景 A：找你"知道存过但想不起来"的论文
+
+脑子里有这篇论文的印象，想不起标题和作者，也不记得存在哪个文件夹。
+
+```bash
+python3 demo_search.py "深度学习蛋白质结构预测精度"
+# → 0.14 秒，找到当初下载的那篇，返回标题 + 摘要片段 + 文件路径
+```
+
+---
+
+### 场景 B：写作途中，按论点找本地支撑文献（最高频）
+
+不是找某篇特定论文，而是**写到某个论点时，需要从本地库里快速找能引用的文献**。
+
+传统做法：打开 Zotero 翻找、换关键词反复搜、靠印象猜——折腾十几分钟，还不确定找没找全。
+
+这套系统：**用中文描述你想引用的论点 → 立刻知道本地库有没有、哪篇最合适**。
+
+```bash
+# 写到"靶向治疗耐药性分子机制"这一段，需要配引文
+python3 demo_search.py "靶向治疗耐药性分子机制"
+
+# 写到"大语言模型在代码生成的局限性"，中英双查更准
+python3 demo_search.py "大语言模型代码生成局限" --also "LLM code generation limitations"
+
+# 写开题报告某段需要方法论支撑文献
+python3 demo_search.py "面板数据固定效应模型内生性处理"
+```
+
+语义搜索在这里最有优势：你描述的是"论点的含义"，而不是"论文可能用的关键词"——两者往往不同。
+
+> **💡 不知道搜什么？这样做：**
+> 把你正在写的那句话（或那段的中心意思）直接作为查询词。
+>
+> | 你在写…… | 就搜…… |
+> |-----------|--------|
+> | "靶向治疗通过抑制激酶克服耐药的机制" | `靶向治疗激酶耐药机制` |
+> | "深度学习在医学影像分割中的精度提升" | `深度学习医学影像分割精度` |
+> | 某段没有引文，想补上 | 把那段的中心句拿出来，缩短到10字以内搜 |
+>
+> **不需要猜"这篇论文的标题可能是什么"**，直接描述你想表达的意思就行。
+
+---
+
+### 场景 C：写某章节前，摸清本地库的覆盖情况
+
+开写之前先看手头有多少相关文献，覆盖是否充分，避免"写到一半发现资料不足"。
+
+```bash
+# 看本地库在"机器学习金融风险预测"方向有哪些文献（返回前15篇）
+python3 search_papers.py "机器学习金融风险预测" --top 15
+
+# 查看文献的年份分布，判断是否追踪到了最新进展
+python3 search_papers.py "免疫治疗肿瘤" --stats
+
+# 找到一篇核心文献后，找库里与它最相似的其他文章
+# （先用上面的搜索找到它，输出结果里会显示完整标题，复制过来即可）
+python3 search_papers.py --similar "Evaluating Reasoning Abilities of Large Language Models..."
+```
 
 ---
 
@@ -277,7 +350,10 @@ A: 搜索时约 500MB（加载模型），索引文件约 2MB
 A: 可以，直接把 PDF 放在文件夹里，`config.py` 中 `ZOTERO_DIR` 留空即可
 
 **Q: Windows 可以用吗？**
-A: 可以，建议用 WSL 或直接 Python 3.8+
+A: 可以，直接 Python 3.8+ 即可。Windows 上通常用 `python` 而不是 `python3`，如果运行 `python3` 报错，把所有命令里的 `python3` 替换成 `python` 就行。
+
+**Q: 运行命令时提示 "python 不是内部或外部命令"？**
+A: 说明 Python 还没安装，去 [python.org](https://www.python.org/downloads/) 下载安装，安装时勾选 "Add Python to PATH"，装完重新打开终端再试。
 
 ---
 
