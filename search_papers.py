@@ -3,16 +3,16 @@
 文献搜索引擎 v3 - jieba分词 + 语义搜索 + 混合排序
 
 用法:
-  python3 search_papers.py "物候对径流的影响"              # 混合搜索(默认)
-  python3 search_papers.py --keyword "物候 水文 SWAT"      # 仅关键词搜索
-  python3 search_papers.py --semantic "气候变化如何影响水循环"  # 仅语义搜索
-  python3 search_papers.py --topic "植被物候对径流的影响机制"  # 主题搜索（自动扩展）
-  python3 search_papers.py --folder "物候对水影响"          # 按文件夹/分类筛选
-  python3 search_papers.py --year-sort "climate NDVI"      # 按年份排序
-  python3 search_papers.py --similar "韩淑颖"              # 相似论文推荐
-  python3 search_papers.py --stats                         # 显示索引统计
-  python3 search_papers.py --top 20 "SWAT model"          # 返回更多结果
-  python3 search_papers.py "物候 水文" --also "phenology hydrology streamflow"  # 多查询融合
+  python3 search_papers.py "研究主题关键词"              # 混合搜索(默认)
+  python3 search_papers.py --keyword "关键词1 关键词2"   # 仅关键词搜索
+  python3 search_papers.py --semantic "研究问题描述"     # 仅语义搜索
+  python3 search_papers.py --topic "核心研究问题"        # 主题搜索（自动扩展）
+  python3 search_papers.py --folder "子文件夹名"         # 按文件夹/分类筛选
+  python3 search_papers.py --year-sort "关键词"          # 按年份排序
+  python3 search_papers.py --similar "作者名"            # 相似论文推荐
+  python3 search_papers.py --stats                       # 显示索引统计
+  python3 search_papers.py --top 20 "关键词"             # 返回更多结果
+  python3 search_papers.py "中文查询" --also "English query"  # 多查询融合
 """
 
 import json
@@ -34,27 +34,15 @@ except ImportError:
     EMBEDDINGS_PATH = _BASE / "paper_embeddings.npz"
 
 # ============= jieba 领域词典（与build_paper_index.py保持一致） =============
+# 请填入你研究领域的专业词汇，让分词器正确识别这些术语（不会被拆散）
+# 示例格式：
+#   生态学：["物候", "蒸散发", "生长季", "径流"]
+#   医  学：["心肌梗死", "动脉粥样硬化", "冠心病", "胰岛素抵抗"]
+#   材料学：["石墨烯", "纳米管", "超导体", "钙钛矿"]
+#   计算机：["神经网络", "注意力机制", "大语言模型", "迁移学习"]
 DOMAIN_WORDS = [
-    "物候", "物候期", "物候变化", "返青期", "枯黄期", "生长季",
-    "蒸散", "蒸散发", "蒸腾", "潜在蒸散", "实际蒸散",
-    "径流", "产流", "基流", "枯水", "洪水", "洪峰",
-    "径流量", "径流深", "径流系数", "天然径流",
-    "植被覆盖", "植被恢复", "植被指数", "植被动态",
-    "遥感反演", "遥感监测", "遥感数据",
-    "水源涵养", "水源涵养量", "林冠截留",
-    "生态流量", "生态需水", "生态基流", "环境流量",
-    "黄土高原", "西辽河", "海河流域", "黄河流域", "长江流域",
-    "气候变化", "气候变暖", "全球变暖", "极端气候",
-    "退耕还林", "退耕还草", "水土保持",
-    "淤地坝", "鱼鳞坑", "水平阶", "梯田",
-    "碳循环", "碳汇", "碳储量", "净初级生产力",
-    "归因分析", "弹性系数", "敏感性分析",
-    "结构方程", "通径分析", "因果分析",
-    "随机森林", "机器学习", "深度学习",
-    "生态水文", "水文模型", "水文效应",
-    "干旱指数", "干旱事件", "干旱胁迫",
-    "时空变化", "时空格局", "时空分布",
-    "水文气候", "水热耦合", "水量平衡",
+    # 在这里填入你领域的专业词汇
+    # "专业词汇1", "专业词汇2", "专业词汇3",
 ]
 for w in DOMAIN_WORDS:
     jieba.add_word(w)
@@ -75,276 +63,101 @@ STOPWORDS_ZH = {
 }
 
 # 主题→同义词扩展映射
+# 请根据你的研究领域替换/新增条目
+# 格式："中文核心概念": ["English synonym1", "synonym2", "中文同义词", ...]
 TOPIC_EXPANSIONS = {
-    "物候": ["phenology", "phenological", "物候", "SOS", "EOS", "LOS", "返青", "枯黄", "生长季",
-             "green-up", "greenup", "senescence", "growing season", "Double Logistic", "TIMESAT",
-             "spring onset", "autumn", "dormancy", "leaf onset", "leaf-out", "返青期", "枯黄期",
-             "物候期", "物候变化"],
-    "水文": ["hydrological", "hydrology", "水文", "径流", "runoff", "streamflow", "discharge",
-             "产流", "产水", "water yield", "baseflow", "基流", "洪水", "flood", "枯水",
-             "水循环", "water cycle", "水量平衡", "water balance", "水文效应", "水文模型"],
-    "蒸散": ["evapotranspiration", "ET", "蒸散", "蒸发", "PET", "AET", "Penman", "PML",
-             "MODIS ET", "MOD16", "transpiration", "蒸腾", "GLEAM", "蒸散发"],
-    "SWAT": ["SWAT", "swat", "SWAT+", "soil water assessment", "HRU", "SWAT-CUP",
-             "SUFI-2", "子流域"],
-    "遥感": ["remote sensing", "遥感", "NDVI", "LAI", "EVI", "MODIS", "Landsat", "sentinel",
-             "卫星", "satellite", "GEE", "Google Earth Engine", "遥感反演"],
-    "气候变化": ["climate change", "气候变化", "气候变暖", "global warming", "temperature",
-                "precipitation", "降水", "气温", "CMIP", "RCP", "SSP", "变暖",
-                "干旱", "drought", "极端气候", "extreme climate"],
-    "气候因子": ["climate factor", "climate variable", "climatic variable", "气候因子",
-                "temperature", "precipitation", "humidity", "vapor pressure deficit", "VPD",
-                "radiation", "solar radiation", "wind", "wind speed", "photoperiod",
-                "温度", "降水", "湿度", "辐射", "风速", "气温", "气候驱动", "climate driver"],
-    "水文效应": ["hydrological effect", "hydrological impact", "水文效应", "水文影响",
-                "evapotranspiration", "蒸散发", "runoff", "径流", "streamflow",
-                "water yield", "产水量", "water cycle", "水循环"],
-    "植被": ["vegetation", "植被", "forest", "草地", "grassland", "灌木", "shrub", "覆被",
-            "land cover", "land use", "LUCC", "greening", "绿化", "植被覆盖",
-            "NDVI", "植被恢复", "退耕还林", "造林", "afforestation"],
-    "归因": ["attribution", "归因", "贡献", "contribution", "驱动", "driver", "影响因素",
-            "sensitivity", "elasticity", "弹性", "Budyko", "分离", "decomposition", "归因分析"],
-    "土壤": ["soil", "土壤", "soil moisture", "土壤水", "infiltration", "入渗", "土壤侵蚀",
-            "soil erosion", "RUSLE", "USLE", "土壤有机碳", "SOC"],
-    "生态流量": ["ecological flow", "生态流量", "环境流量", "e-flow", "minimum flow",
-                "最小生态需水", "生态需水", "生态基流"],
-    "碳循环": ["carbon", "碳", "NPP", "GPP", "NEP", "固碳", "碳汇", "carbon sequestration",
-              "Biome-BGC", "carbon cycle", "碳储量", "碳循环", "净初级生产力"],
-    "模型": ["model", "模型", "simulation", "模拟", "calibration", "率定", "validation", "验证",
-            "NSE", "RMSE", "参数", "不确定性", "uncertainty"],
-    "生态水文": ["ecohydrology", "eco-hydrology", "生态水文", "水文生态",
-               "vegetation-hydrology", "植被水文", "水文效应"],
-    "海河": ["海河", "Hai River", "Haihe", "华北", "North China"],
-    "黄土高原": ["黄土高原", "Loess Plateau", "黄土", "loess", "黄河", "Yellow River"],
-    "随机森林": ["random forest", "随机森林", "machine learning", "机器学习", "SHAP",
-                "XGBoost", "neural network", "deep learning", "深度学习", "CNN", "LSTM"],
-    "Budyko": ["Budyko", "水热耦合", "干燥度", "aridity index", "蒸散比",
-              "evaporative index", "水量平衡", "弹性系数"],
-    "干旱": ["drought", "干旱", "SPEI", "SPI", "PDSI", "干旱指数", "干旱事件",
-            "干旱胁迫", "水分胁迫", "water stress"],
+    # 以下为示例条目，可直接替换为你的领域
+    "气候变化": ["climate change", "global warming", "warming", "temperature",
+                "precipitation", "降水", "气温", "变暖", "extreme climate"],
+    "机器学习": ["machine learning", "deep learning", "neural network", "ML", "AI",
+                "random forest", "XGBoost", "LSTM", "transformer", "CNN", "SHAP"],
+    "遥感": ["remote sensing", "satellite", "NDVI", "EVI", "MODIS", "Landsat",
+            "Google Earth Engine", "GEE", "sentinel", "卫星", "遥感反演"],
+    # 在此继续添加你的核心研究概念...
+    # "你的主题": ["English synonym1", "synonym2", "中文同义词"],
 }
 
 # ============= 中文→英文查询翻译（语义搜索用） =============
 # 完整查询模板（优先匹配，最精准）
+# 添加你领域最常用的中文查询短语及其英文关键词扩展
 _QUERY_TEMPLATES = {
-    "物候变化的水文效应": "phenology growing season evapotranspiration hydrology",
-    "物候变化水文效应": "phenology growing season evapotranspiration hydrology",
-    "气候因子对物候的影响": "climate temperature precipitation phenology",
-    "气候因子物候影响": "climate temperature precipitation phenology",
-    "气候变化生长季蒸散发": "climate change growing season evapotranspiration",
-    "生长季延长蒸散发增加": "growing season lengthening evapotranspiration increase",
-    "物候对水文的影响": "phenology evapotranspiration streamflow hydrology",
-    "物候对径流的影响": "phenology runoff streamflow discharge",
-    "植被物候变化": "vegetation phenology change",
-    "春季物候提前": "spring phenology advance earlier greenup",
-    "秋季物候推迟": "autumn phenology delay senescence",
-    "气候变化对植被的影响": "climate change vegetation response",
-    "物候遥感反演": "phenology remote sensing satellite NDVI",
-    "蒸散发归因分析": "evapotranspiration attribution climate vegetation",
-    "水文模型模拟": "hydrological model simulation",
-    "植被变化水文响应": "vegetation change hydrological response runoff",
-    "考虑物候的水文模型": "phenology hydrological model SWAT ecohydrology vegetation",
-    "水文模型中的物候参数": "phenology parameter hydrological model growing season LAI",
-    "天然植被与人工植被划分": "natural vegetation planted forest classification mapping",
-    "天然林人工林识别": "natural forest planted forest classification mapping distinguish",
+    # "中文查询短语": "English keyword expansion",
+    # 示例：
+    # "气候变化对植被的影响": "climate change vegetation response effect",
+    # "机器学习图像分类": "machine learning image classification CNN deep learning",
 }
 
-# 词级翻译（丰富同义词版，用于英文关键词搜索通道）
+# 词级翻译（用于英文关键词搜索通道，让中文查询能匹配英文文献）
+# 保留通用翻译，并在下方添加你领域的专用词对
 CN_TO_EN_QUERY = {
-    "气候因子": "climate",
-    "物候": "phenology phenological",
-    "物候变化": "phenology phenological",
-    "蒸散发": "evapotranspiration transpiration",
-    "蒸散": "evapotranspiration",
-    "径流": "runoff streamflow discharge",
-    "水文效应": "hydrological hydrology streamflow runoff evapotranspiration",
-    "水文响应": "hydrological response",
-    "水文": "hydrological hydrology",
-    "水循环": "water cycle hydrological",
-    "气候变化": "climate change warming",
-    "生长季": "growing season",
-    "生长季延长": "growing season lengthening",
-    "返青期": "spring greenup",
-    "返青": "greenup green-up",
-    "枯黄期": "autumn senescence",
-    "枯黄": "senescence",
-    "温度": "temperature warming",
+    # ======= 通用学术词汇（各领域通用，建议保留）=======
+    "温度": "temperature",
     "降水": "precipitation rainfall",
-    "湿度": "humidity",
+    "气候": "climate",
+    "气候变化": "climate change warming",
+    "干旱": "drought",
+    "遥感": "remote sensing satellite",
     "森林": "forest",
     "植被": "vegetation",
-    "干旱": "drought",
-    "归因": "attribution",
-    "遥感": "remote sensing satellite NDVI",
-    "碳循环": "carbon cycle GPP",
-    "水文模型": "hydrological model",
-    "影响": "effect impact",
-    "机制": "mechanism",
-    "气候驱动": "climate forcing",
+    "土壤": "soil",
     "土壤水分": "soil moisture",
-    "响应": "response",
-    "趋势": "trend",
-    "变暖": "warming",
-    "增加": "increase",
-    "减少": "decrease",
-    "模拟": "simulation",
-    "冠层": "canopy",
-    "叶面积": "leaf area LAI",
-    "碳": "carbon GPP",
-    "产水量": "water yield",
-    "积雪": "snow snowpack",
-    "草地": "grassland",
-    "农田": "cropland",
-    # 植被分类
-    "天然植被": "natural vegetation",
-    "人工植被": "planted artificial vegetation",
-    "天然林": "natural forest",
-    "人工林": "planted forest plantation",
-    "造林": "afforestation reforestation",
-    "退耕还林": "afforestation reforestation",
-    "划分": "classification mapping distinguish",
+    "碳": "carbon",
+    "归因": "attribution",
     "分类": "classification",
     "制图": "mapping",
     "识别": "identification detection",
-    "水文模型": "hydrological model SWAT VIC",
-    "生态水文": "ecohydrology ecohydrological",
-    # 地理名词
-    "流域": "basin watershed catchment",
-    "高原": "plateau",
-    "青藏高原": "Tibetan Plateau",
-    "黄土高原": "Loess Plateau",
-    "海河": "Haihe",
-    "黄河": "Yellow River",
-    "长江": "Yangtze",
-    "华北": "North China",
-    "东北": "Northeast China",
-    "西北": "Northwest China",
+    "影响": "effect impact",
+    "机制": "mechanism",
+    "趋势": "trend",
+    "响应": "response",
+    "模拟": "simulation modeling",
+    "预测": "prediction forecast",
+    "评估": "assessment evaluation",
+    "时空": "spatiotemporal spatial temporal",
+    "全球": "global",
+    "区域": "regional",
+    # ======= 在此添加你领域的专用词对 =======
+    # "你的专业词": "your professional term",
 }
 
 # ============= 英→中标签映射（给英文论文生成中文关键词） =============
+# 保留通用标签，在下方添加你领域的专用词对
 _EN_TO_CN_TAGS = {
-    # 物候
-    "phenology": "物候", "phenological": "物候", "phenophase": "物候",
-    "growing season length": "生长季长度", "growing season": "生长季",
-    "start of season": "返青期", "end of season": "枯黄期",
-    "green-up": "返青", "greenup": "返青", "budburst": "萌芽",
-    "senescence": "枯黄", "leaf-out": "展叶", "leaf out": "展叶",
-    "spring onset": "春季物候", "autumn": "秋季",
-    # 蒸散发/水文
-    "evapotranspiration": "蒸散发", "transpiration": "蒸腾",
-    "potential evapotranspiration": "潜在蒸散发",
-    "water cycle": "水循环", "water balance": "水量平衡",
-    "water yield": "产水量", "water resources": "水资源",
-    "hydrological response": "水文响应", "hydrological": "水文", "hydrology": "水文",
-    "runoff": "径流", "streamflow": "径流", "discharge": "径流",
-    "baseflow": "基流", "interception": "截留",
-    "snow": "积雪", "snowmelt": "融雪", "snowpack": "积雪",
-    "flood": "洪水", "river": "河流",
     # 气候
     "climate change": "气候变化", "global warming": "全球变暖",
     "climate variability": "气候变率",
-    "vapor pressure deficit": "饱和水汽压差VPD", "vpd": "饱和水汽压差VPD",
     "temperature": "温度", "air temperature": "气温",
     "precipitation": "降水", "rainfall": "降水",
     "humidity": "湿度", "relative humidity": "湿度",
     "solar radiation": "太阳辐射", "radiation": "辐射",
-    "wind speed": "风速", "wind": "风",
+    "wind speed": "风速",
     "warming": "变暖", "frost": "霜冻", "co2": "CO2",
-    # 植被
-    "vegetation": "植被", "forest": "森林", "temperate forest": "温带森林",
-    "boreal": "北方针叶林", "tropical": "热带", "alpine": "高寒",
-    "deciduous": "落叶", "conifer": "针叶", "evergreen": "常绿",
+    "drought": "干旱", "semi-arid": "半干旱", "arid": "干旱",
+    # 植被/生态
+    "vegetation": "植被", "forest": "森林", "grassland": "草地",
+    "cropland": "农田", "shrub": "灌丛", "ecosystem": "生态系统",
     "canopy": "冠层", "leaf area index": "叶面积指数", "lai": "叶面积指数",
-    "leaf area": "叶面积", "leaf": "叶片",
-    "grassland": "草地", "cropland": "农田", "shrub": "灌丛",
-    # 遥感指数
+    # 遥感
     "ndvi": "NDVI", "evi": "EVI", "sif": "SIF",
     "modis": "MODIS", "landsat": "Landsat", "remote sensing": "遥感",
-    # 碳循环/生产力
-    "carbon": "碳", "carbon flux": "碳通量",
-    "gpp": "GPP", "gross primary": "GPP",
-    "npp": "NPP", "net primary": "NPP",
-    "photosynthesis": "光合作用", "respiration": "呼吸",
-    "productivity": "生产力",
-    "water use efficiency": "水分利用效率", "wue": "水分利用效率",
-    "eddy covariance": "涡度相关", "flux tower": "通量塔",
-    # 生态/地理
-    "ecosystem": "生态系统", "drought": "干旱",
-    "semi-arid": "半干旱", "arid": "干旱",
+    # 碳/生产力
+    "carbon": "碳", "gpp": "GPP", "npp": "NPP",
+    "photosynthesis": "光合作用", "productivity": "生产力",
+    # 通用学术
     "soil moisture": "土壤水分", "soil": "土壤",
-    "catchment": "流域", "watershed": "流域", "basin": "流域",
     "attribution": "归因分析", "trend": "趋势", "model": "模型",
     "land use": "土地利用", "land cover": "土地覆盖",
-    "elevation": "海拔", "latitude": "纬度",
-    "tibetan plateau": "青藏高原", "china": "中国",
-    "tree ring": "树轮",
-    # 植被分类
-    "planted forest": "人工林", "plantation": "人工林", "planted": "人工",
-    "natural forest": "天然林", "natural vegetation": "天然植被",
-    "afforestation": "造林", "reforestation": "再造林",
     "classification": "分类", "mapping": "制图",
-    # 水文模型
-    "swat": "SWAT水文模型", "vic model": "VIC模型", "noah": "Noah模型",
-    "ecohydrolog": "生态水文",
-    "land surface model": "陆面模型", "process-based": "过程模型",
+    "elevation": "海拔", "latitude": "纬度",
+    # ======= 在此添加你领域的专用英→中标签 =======
+    # "your English term": "对应中文",
 }
 _COMPOUND_TAG_RULES = [
-    # 气候-物候
-    ({"气候变化", "物候"}, "气候因子物候响应"),
-    ({"温度", "物候"}, "温度驱动物候"),
-    ({"变暖", "物候"}, "温度驱动物候"),
-    ({"降水", "物候"}, "降水影响物候"),
-    ({"湿度", "物候"}, "湿度影响物候"),
-    ({"温度", "湿度", "物候"}, "多气候因子驱动物候"),
-    ({"干旱", "物候"}, "干旱物候响应"),
-    ({"气候变化", "生长季"}, "气候变化影响生长季"),
-    ({"变暖", "生长季"}, "气候变化影响生长季"),
-    # 物候-水文（核心交叉领域）
-    ({"物候", "蒸散发"}, "物候变化水文效应"),
-    ({"物候", "径流"}, "物候变化水文效应"),
-    ({"物候", "水循环"}, "物候变化水文效应"),
-    ({"物候", "水文"}, "物候变化水文效应"),
-    ({"物候", "产水量"}, "物候变化水文效应"),
-    ({"物候", "水文响应"}, "物候变化水文效应"),
-    ({"物候", "河流"}, "物候变化水文效应"),
-    ({"生长季", "河流"}, "生长季影响径流"),
-    ({"生长季", "蒸散发"}, "生长季影响蒸散发"),
-    ({"生长季", "径流"}, "生长季影响径流"),
-    ({"生长季长度", "径流"}, "生长季影响径流"),
-    ({"生长季长度", "蒸散发"}, "生长季影响蒸散发"),
-    # 森林/植被-水文
-    ({"森林", "蒸散发"}, "森林蒸散发"),
-    ({"森林", "径流"}, "森林水文效应"),
-    ({"森林", "水文"}, "森林水文效应"),
-    ({"植被", "蒸散发"}, "植被蒸散发"),
-    ({"植被", "径流"}, "植被水文效应"),
-    ({"植被", "水文"}, "植被水文效应"),
-    ({"植被", "物候"}, "植被物候"),
-    # 气候-水文
-    ({"气候变化", "蒸散发"}, "气候变化蒸散发响应"),
-    ({"气候变化", "径流"}, "气候变化径流响应"),
-    ({"气候变化", "水文"}, "气候变化水文响应"),
-    # 碳循环-物候
-    ({"碳", "物候"}, "物候碳循环"),
-    ({"GPP", "物候"}, "物候碳循环"),
-    ({"光合作用", "物候"}, "物候碳循环"),
-    ({"GPP", "生长季"}, "物候碳循环"),
-    ({"生产力", "物候"}, "物候碳循环"),
-    # 干旱
-    ({"干旱", "植被"}, "干旱植被响应"),
-    ({"干旱", "蒸散发"}, "干旱蒸散发响应"),
-    # 水分利用
-    ({"水分利用效率", "植被"}, "植被水分利用效率"),
-    ({"水分利用效率", "物候"}, "物候水分利用效率"),
-    # 生态水文模型
-    ({"物候", "SWAT水文模型"}, "物候水文模型"),
-    ({"物候", "生态水文"}, "物候水文模型"),
-    ({"生长季", "生态水文"}, "物候水文模型"),
-    # 植被分类
-    ({"人工林", "天然林"}, "天然林人工林划分"),
-    ({"人工", "天然植被"}, "天然林人工林划分"),
-    ({"造林", "分类"}, "天然林人工林划分"),
-    ({"造林", "制图"}, "天然林人工林划分"),
+    # 请根据你的研究领域添加复合主题规则
+    # 格式：({"主题标签A", "主题标签B"}, "复合主题标签")
+    # 示例：
+    # ({"气候变化", "植被"}, "气候变化植被响应"),
+    # ({"机器学习", "遥感"}, "遥感机器学习"),
 ]
 
 def _generate_cn_topics(paper):
@@ -363,8 +176,8 @@ def _generate_cn_topics(paper):
     # 也检查folder名称中的中文关键词
     folder = paper.get('folder', '')
     if folder:
-        for kw in ['物候', '水文', '蒸散发', '径流', '气候', '生长季', '植被', '森林',
-                    '干旱', '碳', '遥感', '模型', '归因']:
+        # 从文件夹名称中提取中文关键词（_EN_TO_CN_TAGS中的中文值 + 你添加的领域词）
+        for kw in set(_EN_TO_CN_TAGS.values()):
             if kw in folder:
                 cn.add(kw)
     for conds, tag in _COMPOUND_TAG_RULES:

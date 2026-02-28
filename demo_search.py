@@ -194,7 +194,7 @@ def print_demo_results(query, results, elapsed, stats):
     # ===== 底部提示 =====
     console.print(Rule(style="dim"))
     console.print(
-        f"  [dim]🔧 系统：1244篇论文 · 多语言语义向量 · 中文查询→英文文献匹配[/]"
+        f"  [dim]🔧 系统：{stats.get('total_papers', '?')}篇论文 · 多语言语义向量 · 中文查询→英文文献匹配[/]"
     )
     console.print(
         f"  [dim]📂 模型：paraphrase-multilingual-MiniLM-L12-v2 (384维)[/]"
@@ -206,7 +206,7 @@ def main():
     args = sys.argv[1:]
     if not args:
         console.print("[red]用法: python3 demo_search.py \"搜索查询\" [--also \"额外查询\"][/]")
-        console.print("[dim]示例: python3 demo_search.py \"植被物候对蒸散发的影响\" --also \"vegetation phenology evapotranspiration\"[/]")
+        console.print("[dim]示例: python3 demo_search.py \"你的研究主题关键词\" --also \"your research topic in English\"[/]")
         return
 
     # 解析参数
